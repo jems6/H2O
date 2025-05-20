@@ -278,14 +278,14 @@ class LlamaAttention_heavy_hitter(nn.Module):
         return attn_output, attn_weights, past_key_value
 
 
-def convert_kvcache_llama_heavy_recent(model, config):
+def convert_kvcache_llama_heavy_recent(model, config, layer_idx=0):
 
     for name, module in reversed(model._modules.items()):
 
         if len(list(module.children())) > 0:
-            model._modules[name] = convert_kvcache_llama_heavy_recent(module, config)
+            model._modules[name], layer_idx = convert_kvcache_llama_heavy_recent(module, config, layer_idx)
 
         if isinstance(module, LlamaAttention):
-            model._modules[name] = LlamaAttention_heavy_hitter(config)
-
-    return model
+            model._modules[name] = LlamaAttention_heavy_hitter(config, layer_idx=layer_idx)
+            layer_idx += 1
+    return model, layer_idx
