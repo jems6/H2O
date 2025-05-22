@@ -151,6 +151,10 @@ class LlamaAttention_heavy_hitter(nn.Module):
         # TODO (joao): remove in v4.45 (RoPE is computed in the model, not in the decoder layers)
         self.rotary_emb = LlamaRotaryEmbedding(config=self.config)
 
+        # H2O stuff
+        self.heavy_budget_ratio = config.heavy_ratio
+        self.recent_budget_ratio = config.recent_ratio
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -285,7 +289,7 @@ def convert_kvcache_llama_heavy_recent(model, config, layer_idx=0):
         if len(list(module.children())) > 0:
             model._modules[name], layer_idx = convert_kvcache_llama_heavy_recent(module, config, layer_idx)
 
-        if isinstance(module, LlamaAttention):
+        elif isinstance(module, LlamaAttention):
             model._modules[name] = LlamaAttention_heavy_hitter(config, layer_idx=layer_idx)
             layer_idx += 1
     return model, layer_idx
